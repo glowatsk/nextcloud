@@ -27,6 +27,7 @@ services:
       - ./nextcloud-db:/var/lib/mysql
     env_file:
       - nextcloud.db.env
+      - nextcloud.env
     networks:
       - backend
 
