@@ -1,73 +1,97 @@
 version: "3"
 
 services:
-  nextcloud-app:
-    image: nextcloud
+  db:
+    image: mariadb
+    restart: always
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    volumes:
+      - ./db:/var/lib/mysql
+    env_file:
+      - nextcloud.db.env
+
+  redis:
+    image: redis:alpine
+    restart: always
+
+  app:
+    image: nextcloud:fpm-alpine
     restart: always
     ports:
       - 85:80
     volumes:
       - ./nextcloud-data:/var/www/html
-      - /media/nas:/external_media/nas
+      - /media/nas:/nextcloud-data/data
     environment:
-      - MYSQL_HOST=nextcloud-db
+      - MYSQL_HOST=db
+      - REDIS_HOST=redis
     env_file:
-      - nextcloud.db.env
+      - db.env
+      - nexcloud.env
     depends_on:
-      - nextcloud-db
-    networks:
-      - frontend
-      - backend
+      - db
+      - redis
 
-  nextcloud-db:
-    image: mariadb
+  web:
+    build: ./web
     restart: always
-    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
     volumes:
-      - ./nextcloud-db:/var/lib/mysql
+      - ./nextcloud-data:/var/www/html:ro
     env_file:
-      - nextcloud.db.env
-      - nextcloud.env
+      - web.env
+    depends_on:
+      - app
     networks:
-      - backend
+      - proxy-tier
+      - default
 
-  npm-app:
-    image: jc21/nginx-proxy-manager:latest
+  cron:
+    image: nextcloud:fpm-alpine
+    restart: always
+    volumes:
+      - ./nextcloud-data:/var/www/html
+    entrypoint: /cron.sh
+    depends_on:
+      - db
+      - redis
+
+  proxy:
+    build: ./proxy
     restart: always
     ports:
-      - "80:80"
-      - "81:81"
-      - "443:443"
-    environment:
-      - DB_MYSQL_HOST=npm-db
-    env_file:
-      - npm.db.env
+      - 80:80
+      - 443:443
+    labels:
+      com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy: "true"
     volumes:
-      - ./npm/data:/data
-      - ./npm/letsencrypt:/etc/letsencrypt
-    depends_on:
-      - npm-db
+      - certs:/etc/nginx/certs:ro
+      - vhost.d:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
     networks:
-      - frontend
-      - backend
+      - proxy-tier
 
-  npm-db:
-    image: jc21/mariadb-aria:latest
+  letsencrypt-companion:
+    image: nginxproxy/acme-companion
     restart: always
-    env_file:
-      - npm.db.env
     volumes:
-      - ./npm/data/mysql:/var/lib/mysql
+      - certs:/etc/nginx/certs
+      - acme:/etc/acme.sh
+      - vhost.d:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - backend
+      - proxy-tier
+    depends_on:
+      - proxy
 
 volumes:
-  nextcloud-data:
-  nextcloud-db:
-  npm-data:
-  npm-ssl:
-  npm-db:
+  db:
+  nextcloud:
+  certs:
+  acme:
+  vhost.d:
+  html:
 
 networks:
-  frontend:
-  backend:
+  proxy-tier:
