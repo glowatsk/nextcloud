@@ -48,11 +48,8 @@ services:
   npm-db:
     image: jc21/mariadb-aria:latest
     restart: always
-    environment:
-      - MYSQL_ROOT_PASSWORD=replace-with-secure-password
-      - MYSQL_DATABASE=npm
-      - MYSQL_USER=npm
-      - MYSQL_PASSWORD=replace-with-secure-password
+    env_file:
+      - npm.db.env
     volumes:
       - npm-db:/var/lib/mysql
     networks:
