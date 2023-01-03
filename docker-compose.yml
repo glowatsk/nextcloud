@@ -27,7 +27,7 @@ services:
       - REDIS_HOST=redis
     env_file:
       - db.env
-      - nexcloud.env
+      - nextcloud.env
     depends_on:
       - db
       - redis
