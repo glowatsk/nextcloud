@@ -18,7 +18,8 @@ services:
     image: nextcloud:fpm-alpine
     restart: always
     ports:
-      - 85:80
+      - 9081:80
+      - 9443:443
     volumes:
       - ./nextcloud-data:/var/www/html
       - /media/nas:/nextcloud-data/data
