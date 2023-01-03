@@ -15,11 +15,8 @@ services:
     restart: always
 
   app:
-    image: nextcloud:fpm-alpine
+    image: nextcloud
     restart: always
-    ports:
-      - 9081:80
-      - 9443:443
     volumes:
       - ./nextcloud-data:/var/www/html
       - /media/nas:/nextcloud-data/data
@@ -32,16 +29,6 @@ services:
     depends_on:
       - db
       - redis
-
-  web:
-    build: ./web
-    restart: always
-    volumes:
-      - ./nextcloud-data:/var/www/html:ro
-    env_file:
-      - web.env
-    depends_on:
-      - app
     networks:
       - proxy-tier
       - default
