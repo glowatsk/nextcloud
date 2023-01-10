@@ -19,7 +19,7 @@ services:
       - db
 
   app:
-    image: nextcloud:fpm-stable
+    image: nextcloud:stable
     restart: always
     volumes:
       - ./nextcloud-data:/var/www/html
@@ -54,7 +54,7 @@ services:
       - db
 
   cron:
-    image: nextcloud:fpm-stable
+    image: nextcloud:stable
     restart: always
     volumes:
       - ./nextcloud-data:/var/www/html

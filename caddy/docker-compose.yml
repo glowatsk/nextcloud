@@ -15,10 +15,9 @@ services:
 
 networks:
   caddy:
-    external: true
+    name: caddy
 volumes:
   caddy_data:
-    external: true
 
 
 
