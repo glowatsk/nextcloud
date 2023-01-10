@@ -2,12 +2,13 @@ services:
   caddy:
     image: lucaslorentz/caddy-docker-proxy:ci-alpine
     ports:
-      - 80:80
-      - 443:443
+      - 9080:80
+      - 9443:443
     environment:
       - CADDY_INGRESS_NETWORKS=caddy
     networks:
-      - caddy
+      caddy:
+        ipv4_address: 127.16.0.2
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./caddy_data:/data

@@ -10,13 +10,16 @@ services:
     env_file:
       - db.env
     networks:
-      - db
+      caddy:
+        ipv4_address: 172.16.0.8
+
 
   redis:
     image: redis:alpine
     restart: always
     networks:
-      - db
+      caddy:
+        ipv4_address: 172.16.0.7
 
   app:
     image: nextcloud:stable
@@ -28,6 +31,8 @@ services:
     environment:
       - MYSQL_HOST=db
       - REDIS_HOST=redis
+      - TRUSTED_PROXIES=172.16.0.2
+      - APACHE_DISABLE_REWRITE_IP=1
     env_file:
       - db.env
       - nextcloud.env
@@ -37,11 +42,7 @@ services:
     labels:
       caddy: "${DOMAIN_NAME}"
       caddy.tls: "${DOMAIN_EMAIL}"
-      caddy.file_server: ""
-      caddy.root: "* /nextcloud/var/www/html"
-      caddy.php_fastcgi: "{{upstreams 9000}}"
-      caddy.php_fastcgi.root: "/var/www/html"
-      caddy.php_fastcgi.env: "front_controller_active true"
+      caddy.reverse_proxy: "{{upstreams}}"
       caddy.encode: gzip
       caddy.header: /*
       caddy.header.Strict-Transport-Security: '"max-age=15552000;"'
@@ -49,9 +50,11 @@ services:
       caddy.redir_1: "/.well-known/caldav /remote.php/dav"
       caddy.@forbidden.path: "/.htaccess /data/* /config/* /db_structure /.xml /README /3rdparty/* /lib/* /templates/* /occ /console.php"
       caddy.respond: "@forbidden 403"
-    networks:
-      - caddy
+    links:
       - db
+    networks:
+      caddy:
+        ipv4_address: 172.16.0.6
 
   cron:
     image: nextcloud:stable
@@ -62,6 +65,9 @@ services:
     depends_on:
       - db
       - redis
+    networks:
+      caddy:
+        ipv4_address: 172.16.0.5
 
 volumes:
   db:
